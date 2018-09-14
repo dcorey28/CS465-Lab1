@@ -103,7 +103,14 @@ func subBytes(state [][]byte) [][]byte {
 }
 
 func shiftRows(state [][]byte) [][]byte {
-	return [][]byte{}
+	for i, row := range state {
+		temp := make([]byte, len(row))
+		copy(temp, row)
+		for j := 0; j < 4; j++ {
+			state[i][j] = temp[(j+i)%4]
+		}
+	}
+	return state
 }
 
 func mixColumns(state [][]byte) [][]byte {
