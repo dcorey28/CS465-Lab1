@@ -1,5 +1,7 @@
 package aes
 
+import "encoding/binary"
+
 func ffAdd(a, b byte) byte {
 	return a ^ b
 }
@@ -63,7 +65,29 @@ func rotWord(word uint32) uint32 {
 }
 
 func keyExpansion(key []byte) []uint32 {
-	return []uint32{}
+	Nk := len(key) / 4
+	Nr := Nk + 6
+
+	w := make([]uint32, 4*(Nr+1))
+
+	for i := 0; i < Nk; i++ {
+		j := 4 * i
+		w[i] = binary.BigEndian.Uint32(key[j : j+4])
+	}
+
+	for i := Nk; i < len(w); i++ {
+		temp := w[i-1]
+
+		if (i % Nk) == 0 {
+			temp = subWord(rotWord(temp)) ^ rcon[i/Nk]
+		} else if Nk > 6 && (i%Nk) == 4 {
+			temp = subWord(temp)
+		}
+
+		w[i] = w[i-Nk] ^ temp
+	}
+
+	return w
 }
 
 func subBytes(state [][]byte) [][]byte {
