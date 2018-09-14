@@ -4,7 +4,7 @@ func ffAdd(a, b byte) byte {
 	return 0x00
 }
 
-func xime(b byte) byte {
+func xtime(b byte) byte {
 	return 0x00
 }
 
@@ -38,4 +38,8 @@ func mixColumns(state [][]byte) [][]byte {
 
 func addRoundKey(state [][]byte, w []uint32) [][]byte {
 	return [][]byte{}
+}
+
+func cipher(in []byte, w []uint32) []byte {
+	return []byte{}
 }
