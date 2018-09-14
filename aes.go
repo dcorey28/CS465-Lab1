@@ -91,7 +91,15 @@ func keyExpansion(key []byte) []uint32 {
 }
 
 func subBytes(state [][]byte) [][]byte {
-	return [][]byte{}
+	for i, substate := range state {
+		for j, cell := range substate {
+			col := cell & 0x0f
+			cell = cell >> 4
+			row := cell & 0x0f
+			state[i][j] = sbox[row][col]
+		}
+	}
+	return state
 }
 
 func shiftRows(state [][]byte) [][]byte {
