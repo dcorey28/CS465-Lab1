@@ -114,10 +114,7 @@ func shiftRows(state [][]byte) [][]byte {
 }
 
 func mixColumns(state [][]byte) [][]byte {
-	sp := [][]byte{{0x00, 0x00, 0x00, 0x00},
-		{0x00, 0x00, 0x00, 0x00},
-		{0x00, 0x00, 0x00, 0x00},
-		{0x00, 0x00, 0x00, 0x00}}
+	sp := makeEmptyState()
 
 	for col := 0; col < 4; col++ {
 		sp[0][col] = ffMultiply(0x02, state[0][col]) ^ ffMultiply(0x03, state[1][col]) ^ state[2][col] ^ state[3][col]
@@ -142,5 +139,51 @@ func addRoundKey(state [][]byte, w []uint32) [][]byte {
 }
 
 func cipher(in []byte, w []uint32) []byte {
-	return []byte{}
+	state := toState(in)
+
+	Nr := (len(w) - 1) / 4
+
+	state = addRoundKey(state, w[:4])
+
+	for i := 1; i <= Nr; i++ {
+		state = subBytes(state)
+		state = shiftRows(state)
+
+		if i != Nr {
+			state = mixColumns(state)
+		}
+
+		state = addRoundKey(state, w[i*4:(i+1)*4])
+	}
+
+	return fromState(state)
+}
+
+func makeEmptyState() [][]byte {
+	return [][]byte{{0x00, 0x00, 0x00, 0x00},
+		{0x00, 0x00, 0x00, 0x00},
+		{0x00, 0x00, 0x00, 0x00},
+		{0x00, 0x00, 0x00, 0x00}}
+}
+
+func toState(in []byte) [][]byte {
+	s := makeEmptyState()
+
+	for row := 0; row < 4; row++ {
+		for col := 0; col < 4; col++ {
+			s[row][col] = in[row+4*col]
+		}
+	}
+
+	return s
+}
+
+func fromState(s [][]byte) []byte {
+	out := make([]byte, 16)
+	for row := 0; row < 4; row++ {
+		for col := 0; col < 4; col++ {
+			out[row+4*col] = s[row][col]
+		}
+	}
+	return out
 }
