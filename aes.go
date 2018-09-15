@@ -1,6 +1,8 @@
 package aes
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+)
 
 func ffAdd(a, b byte) byte {
 	return a ^ b
@@ -138,6 +140,42 @@ func addRoundKey(state [][]byte, w []uint32) [][]byte {
 	return state
 }
 
+func invSubBytes(state [][]byte) [][]byte {
+	for i, substate := range state {
+		for j, cell := range substate {
+			col := cell & 0x0f
+			cell = cell >> 4
+			row := cell & 0x0f
+			state[i][j] = invsbox[row][col]
+		}
+	}
+	return state
+}
+
+func invShiftRows(state [][]byte) [][]byte {
+	for i, row := range state {
+		temp := make([]byte, len(row))
+		copy(temp, row)
+		for j := 0; j < 4; j++ {
+			state[i][(j+i)%4] = temp[j]
+		}
+	}
+	return state
+}
+
+func invMixColumns(s [][]byte) [][]byte {
+	sp := makeEmptyState()
+
+	for col := 0; col < 4; col++ {
+		sp[0][col] = ffMultiply(0x0e, s[0][col]) ^ ffMultiply(0x0b, s[1][col]) ^ ffMultiply(0x0d, s[2][col]) ^ ffMultiply(0x09, s[3][col])
+		sp[1][col] = ffMultiply(0x09, s[0][col]) ^ ffMultiply(0x0e, s[1][col]) ^ ffMultiply(0x0b, s[2][col]) ^ ffMultiply(0x0d, s[3][col])
+		sp[2][col] = ffMultiply(0x0d, s[0][col]) ^ ffMultiply(0x09, s[1][col]) ^ ffMultiply(0x0e, s[2][col]) ^ ffMultiply(0x0b, s[3][col])
+		sp[3][col] = ffMultiply(0x0b, s[0][col]) ^ ffMultiply(0x0d, s[1][col]) ^ ffMultiply(0x09, s[2][col]) ^ ffMultiply(0x0e, s[3][col])
+	}
+
+	return sp
+}
+
 func cipher(in []byte, w []uint32) []byte {
 	state := toState(in)
 
@@ -154,6 +192,25 @@ func cipher(in []byte, w []uint32) []byte {
 		}
 
 		state = addRoundKey(state, w[i*4:(i+1)*4])
+	}
+
+	return fromState(state)
+}
+
+func inverseCipher(in []byte, w []uint32) []byte {
+	state := toState(in)
+
+	Nr := (len(w) - 1) / 4
+
+	state = addRoundKey(state, w[Nr*4:(Nr+1)*4])
+
+	for round := Nr - 1; round >= 0; round-- {
+		state = invShiftRows(state)
+		state = invSubBytes(state)
+		state = addRoundKey(state, w[round*4:(round+1)*4])
+		if round != 0 {
+			state = invMixColumns(state)
+		}
 	}
 
 	return fromState(state)
