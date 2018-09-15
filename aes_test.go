@@ -92,7 +92,7 @@ func TestComponents(t *testing.T) {
 	assert.Equal(t, subExpected, subBytes(state), "subBytes failed")
 	assert.Equal(t, shiftExpected, shiftRows(subExpected), "shiftRows failed")
 	assert.Equal(t, mixExpected, mixColumns(shiftExpected), "mixColumns failed")
-	assert.Equal(t, roundExpected, addRoundKey(mixExpected, w), "addRoundKey failed")
+	assert.Equal(t, roundExpected, addRoundKey(mixExpected, w[4:8]), "addRoundKey failed")
 }
 
 func TestCipher(t *testing.T) {

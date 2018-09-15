@@ -130,7 +130,15 @@ func mixColumns(state [][]byte) [][]byte {
 }
 
 func addRoundKey(state [][]byte, w []uint32) [][]byte {
-	return [][]byte{}
+
+	for col := 0; col < 4; col++ {
+		keyfragment := make([]byte, 4)
+		binary.BigEndian.PutUint32(keyfragment, w[col])
+		for row := 0; row < 4; row++ {
+			state[row][col] = state[row][col] ^ keyfragment[row]
+		}
+	}
+	return state
 }
 
 func cipher(in []byte, w []uint32) []byte {
