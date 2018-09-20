@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/dcorey28/CS465/Lab1/aes"
+	"github.com/dcorey28/CS465-Lab1/aes"
 )
 
 func main() {
