@@ -2,44 +2,83 @@ package aes
 
 import (
 	"encoding/binary"
+	"fmt"
 )
 
+// Encrypt encrypts the input bytes following the AES standard
+func Encrypt(in []byte, key []byte) []byte {
+	w := keyExpansion(key)
+	return cipher(in, w)
+}
+
+// Decrypt decrypts the input bytes following the AES standard
+func Decrypt(in []byte, key []byte) []byte {
+	w := keyExpansion(key)
+	return inverseCipher(in, w)
+}
+
 func cipher(in []byte, w []uint32) []byte {
+	fmt.Printf("CIPHER (ENCRYPT):\n")
+	fmt.Printf("round[ 0].input    %x\n", in)
 	state := toState(in)
 
 	Nr := (len(w) - 1) / 4
 
 	state = addRoundKey(state, w[:4])
+	fmt.Printf("round[ 0].k_sch    %s\n", wordsToString(w[:4]))
 
 	for i := 1; i <= Nr; i++ {
+		fmt.Printf("round[%2d].start    %s\n", i, stateToString(state))
 		state = subBytes(state)
+		fmt.Printf("round[%2d].s_box    %s\n", i, stateToString(state))
 		state = shiftRows(state)
+		fmt.Printf("round[%2d].s_row    %s\n", i, stateToString(state))
 
 		if i != Nr {
 			state = mixColumns(state)
+			fmt.Printf("round[%2d].m_col    %s\n", i, stateToString(state))
 		}
 
 		state = addRoundKey(state, w[i*4:(i+1)*4])
+		fmt.Printf("round[%2d].k_sch    %s\n", i, wordsToString(w[i*4:(i+1)*4]))
 	}
 
-	return fromState(state)
+	out := fromState(state)
+	fmt.Printf("round[%2d].output   %x\n\n", Nr, out)
+
+	return out
 }
 
 func inverseCipher(in []byte, w []uint32) []byte {
+	fmt.Printf("INVERSE CIPHER (DECRYPT):\n")
+	fmt.Printf("round[ 0].iinput   %x\n", in)
 	state := toState(in)
 
 	Nr := (len(w) - 1) / 4
 
 	state = addRoundKey(state, w[Nr*4:(Nr+1)*4])
+	fmt.Printf("round[ 0].ik_sch   %s\n", wordsToString(w[Nr*4:(Nr+1)*4]))
 
 	for round := Nr - 1; round >= 0; round-- {
+		fmt.Printf("round[%2d].istart   %s\n", Nr-round, stateToString(state))
+
 		state = invShiftRows(state)
+		fmt.Printf("round[%2d].is_row   %s\n", Nr-round, stateToString(state))
+
 		state = invSubBytes(state)
+		fmt.Printf("round[%2d].is_box   %s\n", Nr-round, stateToString(state))
+
 		state = addRoundKey(state, w[round*4:(round+1)*4])
+		fmt.Printf("round[%2d].ik_sch   %s\n", Nr-round, wordsToString(w[round*4:(round+1)*4]))
+
 		if round != 0 {
+			fmt.Printf("round[%2d].ik_add   %s\n", Nr-round, stateToString(state))
 			state = invMixColumns(state)
 		}
 	}
+
+	out := fromState(state)
+	fmt.Printf("round[%2d].ioutput  %x\n\n", Nr, out)
 
 	return fromState(state)
 }
@@ -179,7 +218,7 @@ func ffMultiply(a, b byte) byte {
 	for mask > 0 {
 		// mask b to see if it has a bit set at each position
 		if (mask & b) != 0 {
-			// if the bit is set then we want to XOR that position'state intermediate value to the result
+			// if the bit is set then we want to XOR that position's intermediate value to the result
 			result = result ^ intermediate
 		}
 
@@ -243,4 +282,22 @@ func fromState(s [][]byte) []byte {
 		}
 	}
 	return out
+}
+
+func wordsToString(w []uint32) string {
+	s := ""
+	for _, word := range w {
+		s += fmt.Sprintf("%08x", word)
+	}
+	return s
+}
+
+func stateToString(state [][]byte) string {
+	s := ""
+	for col := 0; col < 4; col++ {
+		for row := 0; row < 4; row++ {
+			s += fmt.Sprintf("%02x", state[row][col])
+		}
+	}
+	return s
 }
